@@ -1,7 +1,13 @@
+from flask import Flask, render_template, request, send_file
 import urllib.request
 import urllib.parse
 import re
 import json
+import os
+
+app = Flask(__name__)
+DOWNLOAD_FOLDER = 'downloads'
+os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
 class YouTubeDownloader:
     def __init__(self):
@@ -9,11 +15,9 @@ class YouTubeDownloader:
         self.user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
 
     def extract_video_id(self, url):
-        # Handle youtu.be URLs
         if 'youtu.be' in url:
             return url.split('/')[-1].split('?')[0]
         
-        # Handle youtube.com URLs
         if 'youtube.com' in url:
             query = urllib.parse.urlparse(url)
             if query.path == '/watch':
@@ -51,28 +55,35 @@ class YouTubeDownloader:
                     break
                 f.write(chunk)
 
-def main():
-    downloader = YouTubeDownloader()
-    
-    print("YouTube to MP3 Converter")
-    print("Supported formats: youtube.com/watch, youtu.be, youtube.com/shorts")
-    url = input("Enter YouTube URL: ")
-    
-    video_id = downloader.extract_video_id(url)
-    if not video_id:
-        print("Invalid YouTube URL")
-        return
-    
-    print("Extracting video info...")
-    info = downloader.get_video_info(video_id)
-    
-    safe_title = "".join(c for c in info['title'] if c.isalnum() or c in (' ', '-', '_')).rstrip()
-    output_file = f"{safe_title}.mp3"
-    
-    print("Downloading audio...")
-    downloader.download_audio(info['url'], output_file)
-    
-    print(f"Done! Saved as: {output_file}")
+@app.route('/', methods=['GET', 'POST'])
+def home():
+    if request.method == 'POST':
+        url = request.form.get('url')
+        if not url:
+            return render_template('index.html', error="Please enter a URL")
 
-if __name__ == "__main__":
-    main()
+        downloader = YouTubeDownloader()
+        video_id = downloader.extract_video_id(url)
+        
+        if not video_id:
+            return render_template('index.html', error="Invalid YouTube URL")
+
+        try:
+            info = downloader.get_video_info(video_id)
+            safe_title = "".join(c for c in info['title'] if c.isalnum() or c in (' ', '-', '_')).rstrip()
+            output_file = os.path.join(DOWNLOAD_FOLDER, f"{safe_title}.mp3")
+            
+            downloader.download_audio(info['url'], output_file)
+            
+            return send_file(
+                output_file,
+                as_attachment=True,
+                download_name=f"{safe_title}.mp3"
+            )
+        except Exception as e:
+            return render_template('index.html', error=f"Download failed: {str(e)}")
+
+    return render_template('index.html')
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
