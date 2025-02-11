@@ -122,7 +122,7 @@ def home():
             "method": "POST",
             "endpoint": "/hack",
             "body": {
-                "target": "https://target-phone-os.onrender.com"
+                "target": "https://n-r2j7.onrender.com/"
             }
         }
     })
@@ -142,7 +142,7 @@ def hack():
 @app.route('/test_hack')
 def test_hack():
     # Replace with your actual Phone OS URL
-    phone_os_url = "https://your-phone-os.onrender.com"
+    phone_os_url = "https://n-r2j7.onrender.com/"
     result = hacker.execute_hack(phone_os_url)
     return jsonify(result)
 
