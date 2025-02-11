@@ -3,13 +3,16 @@ import requests
 import threading
 import time
 import random
+import logging
 
 app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
 
 class PhoneHacker:
     def __init__(self):
         self.attack_success = False
         self.logs = []
+        self.active_attacks = 0
         
     def scan_target(self, target):
         self.logs.append("🔍 SCANNING TARGET SYSTEM")
@@ -19,7 +22,8 @@ class PhoneHacker:
             self.logs.extend([
                 f"TARGET STATUS: {status.text}",
                 f"SECURITY LEVEL: {security.text}",
-                "VULNERABILITIES DETECTED"
+                "VULNERABILITIES DETECTED",
+                f"SYSTEM ACCESS POINTS IDENTIFIED: {random.randint(3, 8)}"
             ])
             return True
         except:
@@ -28,11 +32,23 @@ class PhoneHacker:
 
     def brute_force_security(self, target):
         self.logs.append("INITIATING BRUTE FORCE SEQUENCE")
+        attack_patterns = [
+            "DICTIONARY_ATTACK",
+            "RAINBOW_TABLE_LOOKUP",
+            "HASH_COLLISION",
+            "BUFFER_OVERFLOW"
+        ]
+        
         for level in range(0, 101, 10):
-            payload = {"level": level}
+            pattern = random.choice(attack_patterns)
+            self.logs.append(f"EXECUTING {pattern} - PROGRESS: {level}%")
+            payload = {
+                "level": level,
+                "pattern": pattern,
+                "timestamp": time.time()
+            }
             try:
                 response = requests.post(f"{target}/modify_security", json=payload, timeout=5)
-                self.logs.append(f"ATTEMPTING SECURITY BYPASS: LEVEL {level}")
                 if response.status_code == 200:
                     if level > 90:
                         self.attack_success = True
@@ -44,13 +60,25 @@ class PhoneHacker:
 
     def ddos_simulation(self, target):
         self.logs.append("LAUNCHING DISTRIBUTED ATTACK")
-        success_rate = random.randint(60, 100)
-        self.logs.append(f"ATTACK EFFECTIVENESS: {success_rate}%")
-        return success_rate > 80
+        attack_vectors = [
+            "SYN_FLOOD",
+            "UDP_FLOOD",
+            "HTTP_FLOOD",
+            "DNS_AMPLIFICATION"
+        ]
+        
+        for vector in attack_vectors:
+            success_rate = random.randint(60, 100)
+            self.logs.append(f"VECTOR: {vector} - EFFECTIVENESS: {success_rate}%")
+            if success_rate > 90:
+                self.logs.append("CRITICAL SYSTEM IMPACT ACHIEVED")
+                return True
+        return False
 
     def execute_hack(self, target):
         self.logs = []
         self.attack_success = False
+        start_time = time.time()
         
         attack_phases = {
             "RECONNAISSANCE": self.scan_target,
@@ -62,23 +90,52 @@ class PhoneHacker:
             self.logs.append(f"\n>> PHASE: {phase_name}")
             if not phase_func(target):
                 break
-            time.sleep(1)  # Dramatic effect
+            time.sleep(1)
 
+        execution_time = time.time() - start_time
+        
         return {
+            "operation": "PHONE_OS_HACK",
             "success": self.attack_success,
             "logs": self.logs,
-            "target": target
+            "target": target,
+            "execution_time": f"{execution_time:.2f}s",
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
         }
 
 hacker = PhoneHacker()
+
+@app.route('/')
+def home():
+    return jsonify({
+        "service": "Phone OS Hacker API",
+        "version": "2.0",
+        "status": "OPERATIONAL",
+        "endpoints": {
+            "/": "GET - Service information",
+            "/hack": "POST - Launch attack with target URL",
+            "/status": "GET - Service status",
+            "/metrics": "GET - Attack statistics"
+        },
+        "usage_example": {
+            "method": "POST",
+            "endpoint": "/hack",
+            "body": {
+                "target": "https://target-phone-os.onrender.com"
+            }
+        }
+    })
 
 @app.route('/hack', methods=['POST'])
 def hack():
     target = request.json.get('target')
     if not target:
-        return jsonify({"error": "TARGET_REQUIRED"}), 400
+        return jsonify({"error": "TARGET_REQUIRED", "status": "FAILED"}), 400
     
+    hacker.active_attacks += 1
     result = hacker.execute_hack(target)
+    hacker.active_attacks -= 1
+    
     return jsonify(result)
 
 @app.route('/status')
@@ -86,7 +143,19 @@ def status():
     return jsonify({
         "service": "Phone OS Hacker",
         "status": "OPERATIONAL",
-        "version": "1.0"
+        "active_attacks": hacker.active_attacks,
+        "uptime": "CLASSIFIED",
+        "version": "2.0"
+    })
+
+@app.route('/metrics')
+def metrics():
+    return jsonify({
+        "total_attacks": random.randint(100, 1000),
+        "success_rate": f"{random.randint(70, 95)}%",
+        "average_breach_time": f"{random.randint(2, 8)}s",
+        "active_sessions": hacker.active_attacks,
+        "system_load": f"{random.randint(40, 90)}%"
     })
 
 if __name__ == '__main__':
