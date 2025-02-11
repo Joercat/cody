@@ -115,7 +115,8 @@ def home():
             "/": "GET - Service information",
             "/hack": "POST - Launch attack with target URL",
             "/status": "GET - Service status",
-            "/metrics": "GET - Attack statistics"
+            "/metrics": "GET - Attack statistics",
+            "/test_hack": "GET - Launch test attack"
         },
         "usage_example": {
             "method": "POST",
@@ -136,6 +137,13 @@ def hack():
     result = hacker.execute_hack(target)
     hacker.active_attacks -= 1
     
+    return jsonify(result)
+
+@app.route('/test_hack')
+def test_hack():
+    # Replace with your actual Phone OS URL
+    phone_os_url = "https://your-phone-os.onrender.com"
+    result = hacker.execute_hack(phone_os_url)
     return jsonify(result)
 
 @app.route('/status')
