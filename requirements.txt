@@ -1,4 +1,0 @@
-flask
-gunicorn
-urllib3
-pip>=24.3.1
