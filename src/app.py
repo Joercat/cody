@@ -4,30 +4,73 @@ import threading
 import time
 import random
 import logging
+from datetime import datetime
+import json
+import os
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
+
+class ActivityLogger:
+    def __init__(self):
+        self.log_file = "hack_activities.json"
+        self.activities = self.load_logs()
+        
+    def load_logs(self):
+        if os.path.exists(self.log_file):
+            with open(self.log_file, 'r') as f:
+                return json.load(f)
+        return []
+        
+    def log_activity(self, activity_type, details):
+        activity = {
+            "timestamp": datetime.now().isoformat(),
+            "type": activity_type,
+            "details": details,
+            "success": details.get("success", False)
+        }
+        self.activities.append(activity)
+        self.save_logs()
+        
+    def save_logs(self):
+        with open(self.log_file, 'w') as f:
+            json.dump(self.activities, f, indent=2)
+            
+    def get_recent_activities(self, limit=10):
+        return self.activities[-limit:]
 
 class PhoneHacker:
     def __init__(self):
         self.attack_success = False
         self.logs = []
         self.active_attacks = 0
+        self.logger = ActivityLogger()
         
     def scan_target(self, target):
+        scan_details = {
+            "scan_type": "system_reconnaissance",
+            "timestamp": datetime.now().isoformat()
+        }
+        
         self.logs.append("🔍 SCANNING TARGET SYSTEM")
         try:
             status = requests.get(f"{target}/status", timeout=5)
             security = requests.get(f"{target}/security_level", timeout=5)
-            self.logs.extend([
+            scan_results = [
                 f"TARGET STATUS: {status.text}",
                 f"SECURITY LEVEL: {security.text}",
                 "VULNERABILITIES DETECTED",
                 f"SYSTEM ACCESS POINTS IDENTIFIED: {random.randint(3, 8)}"
-            ])
+            ]
+            self.logs.extend(scan_results)
+            scan_details["results"] = scan_results
+            scan_details["success"] = True
+            self.logger.log_activity("system_scan", scan_details)
             return True
         except:
             self.logs.append("TARGET SCAN FAILED")
+            scan_details["success"] = False
+            self.logger.log_activity("system_scan", scan_details)
             return False
 
     def brute_force_security(self, target):
@@ -39,8 +82,16 @@ class PhoneHacker:
             "BUFFER_OVERFLOW"
         ]
         
+        brute_force_details = {
+            "patterns_used": [],
+            "attempts": 0
+        }
+        
         for level in range(0, 101, 10):
             pattern = random.choice(attack_patterns)
+            brute_force_details["patterns_used"].append(pattern)
+            brute_force_details["attempts"] += 1
+            
             self.logs.append(f"EXECUTING {pattern} - PROGRESS: {level}%")
             payload = {
                 "level": level,
@@ -53,9 +104,14 @@ class PhoneHacker:
                     if level > 90:
                         self.attack_success = True
                         self.logs.append("🔓 SECURITY BREACH ACHIEVED")
+                        brute_force_details["success"] = True
+                        self.logger.log_activity("brute_force", brute_force_details)
                         return True
             except:
                 continue
+        
+        brute_force_details["success"] = False
+        self.logger.log_activity("brute_force", brute_force_details)
         return False
 
     def ddos_simulation(self, target):
@@ -67,18 +123,37 @@ class PhoneHacker:
             "DNS_AMPLIFICATION"
         ]
         
+        ddos_details = {
+            "vectors_used": [],
+            "effectiveness": {}
+        }
+        
         for vector in attack_vectors:
             success_rate = random.randint(60, 100)
+            ddos_details["vectors_used"].append(vector)
+            ddos_details["effectiveness"][vector] = f"{success_rate}%"
+            
             self.logs.append(f"VECTOR: {vector} - EFFECTIVENESS: {success_rate}%")
             if success_rate > 90:
                 self.logs.append("CRITICAL SYSTEM IMPACT ACHIEVED")
+                ddos_details["success"] = True
+                self.logger.log_activity("ddos_attack", ddos_details)
                 return True
+                
+        ddos_details["success"] = False
+        self.logger.log_activity("ddos_attack", ddos_details)
         return False
 
     def execute_hack(self, target):
+        start_time = time.time()
+        attack_details = {
+            "target": target,
+            "start_time": datetime.now().isoformat(),
+            "attack_vectors_used": []
+        }
+        
         self.logs = []
         self.attack_success = False
-        start_time = time.time()
         
         attack_phases = {
             "RECONNAISSANCE": self.scan_target,
@@ -88,11 +163,19 @@ class PhoneHacker:
 
         for phase_name, phase_func in attack_phases.items():
             self.logs.append(f"\n>> PHASE: {phase_name}")
+            attack_details["attack_vectors_used"].append(phase_name)
             if not phase_func(target):
                 break
-            time.sleep(1)
 
         execution_time = time.time() - start_time
+        
+        attack_details.update({
+            "success": self.attack_success,
+            "duration": f"{execution_time:.2f}s",
+            "logs": self.logs
+        })
+        
+        self.logger.log_activity("hack_attempt", attack_details)
         
         return {
             "operation": "PHONE_OS_HACK",
@@ -100,7 +183,7 @@ class PhoneHacker:
             "logs": self.logs,
             "target": target,
             "execution_time": f"{execution_time:.2f}s",
-            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+            "timestamp": datetime.now().isoformat()
         }
 
 hacker = PhoneHacker()
@@ -116,14 +199,8 @@ def home():
             "/hack": "POST - Launch attack with target URL",
             "/status": "GET - Service status",
             "/metrics": "GET - Attack statistics",
-            "/test_hack": "GET - Launch test attack"
-        },
-        "usage_example": {
-            "method": "POST",
-            "endpoint": "/hack",
-            "body": {
-                "target": "https://n-r2j7.onrender.com/"
-            }
+            "/test_hack": "GET - Launch test attack",
+            "/activity_log": "GET - View recent activities"
         }
     })
 
@@ -141,8 +218,7 @@ def hack():
 
 @app.route('/test_hack')
 def test_hack():
-    # Replace with your actual Phone OS URL
-    phone_os_url = "https://n-r2j7.onrender.com/"
+    phone_os_url = "https://your-phone-os.onrender.com"  # Replace with actual URL
     result = hacker.execute_hack(phone_os_url)
     return jsonify(result)
 
@@ -159,12 +235,26 @@ def status():
 @app.route('/metrics')
 def metrics():
     return jsonify({
-        "total_attacks": random.randint(100, 1000),
-        "success_rate": f"{random.randint(70, 95)}%",
+        "total_attacks": len(hacker.logger.activities),
+        "success_rate": calculate_success_rate(hacker.logger.activities),
         "average_breach_time": f"{random.randint(2, 8)}s",
         "active_sessions": hacker.active_attacks,
         "system_load": f"{random.randint(40, 90)}%"
     })
+
+@app.route('/activity_log')
+def activity_log():
+    return jsonify({
+        "recent_activities": hacker.logger.get_recent_activities(),
+        "total_activities": len(hacker.logger.activities),
+        "success_rate": calculate_success_rate(hacker.logger.activities)
+    })
+
+def calculate_success_rate(activities):
+    if not activities:
+        return "0%"
+    successful = sum(1 for activity in activities if activity["success"])
+    return f"{(successful / len(activities)) * 100:.1f}%"
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000)
