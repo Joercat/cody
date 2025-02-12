@@ -17,9 +17,14 @@ class ActivityLogger:
         self.activities = self.load_logs()
         
     def load_logs(self):
-        if os.path.exists(self.log_file):
-            with open(self.log_file, 'r') as f:
-                return json.load(f)
+        try:
+            os.makedirs('logs', exist_ok=True)
+            log_path = os.path.join('logs', self.log_file)
+            if os.path.exists(log_path):
+                with open(log_path, 'r') as f:
+                    return json.load(f)
+        except:
+            pass
         return []
         
     def log_activity(self, activity_type, details):
@@ -33,8 +38,12 @@ class ActivityLogger:
         self.save_logs()
         
     def save_logs(self):
-        with open(self.log_file, 'w') as f:
-            json.dump(self.activities, f, indent=2)
+        try:
+            os.makedirs('logs', exist_ok=True)
+            with open(os.path.join('logs', self.log_file), 'w') as f:
+                json.dump(self.activities, f, indent=2)
+        except:
+            pass
             
     def get_recent_activities(self, limit=10):
         return self.activities[-limit:]
@@ -53,6 +62,7 @@ class PhoneHacker:
         }
         
         self.logs.append("🔍 SCANNING TARGET SYSTEM")
+        time.sleep(2)  # Dramatic pause
         try:
             status = requests.get(f"{target}/status", timeout=5)
             security = requests.get(f"{target}/security_level", timeout=5)
@@ -75,6 +85,7 @@ class PhoneHacker:
 
     def brute_force_security(self, target):
         self.logs.append("INITIATING BRUTE FORCE SEQUENCE")
+        time.sleep(1.5)  # Dramatic pause
         attack_patterns = [
             "DICTIONARY_ATTACK",
             "RAINBOW_TABLE_LOOKUP",
@@ -93,6 +104,7 @@ class PhoneHacker:
             brute_force_details["attempts"] += 1
             
             self.logs.append(f"EXECUTING {pattern} - PROGRESS: {level}%")
+            time.sleep(0.5)  # Progress pause
             payload = {
                 "level": level,
                 "pattern": pattern,
@@ -116,6 +128,7 @@ class PhoneHacker:
 
     def ddos_simulation(self, target):
         self.logs.append("LAUNCHING DISTRIBUTED ATTACK")
+        time.sleep(1.5)  # Dramatic pause
         attack_vectors = [
             "SYN_FLOOD",
             "UDP_FLOOD",
@@ -134,6 +147,7 @@ class PhoneHacker:
             ddos_details["effectiveness"][vector] = f"{success_rate}%"
             
             self.logs.append(f"VECTOR: {vector} - EFFECTIVENESS: {success_rate}%")
+            time.sleep(0.8)  # Vector pause
             if success_rate > 90:
                 self.logs.append("CRITICAL SYSTEM IMPACT ACHIEVED")
                 ddos_details["success"] = True
@@ -164,8 +178,13 @@ class PhoneHacker:
         for phase_name, phase_func in attack_phases.items():
             self.logs.append(f"\n>> PHASE: {phase_name}")
             attack_details["attack_vectors_used"].append(phase_name)
+            time.sleep(2)  # Phase transition pause
             if not phase_func(target):
                 break
+
+        if self.attack_success:
+            self.logs.append("🔥 TARGET SYSTEM COMPROMISED 🔥")
+            time.sleep(1)  # Victory pause
 
         execution_time = time.time() - start_time
         
@@ -183,7 +202,8 @@ class PhoneHacker:
             "logs": self.logs,
             "target": target,
             "execution_time": f"{execution_time:.2f}s",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
+            "recent_activities": self.logger.get_recent_activities(5)  # Show last 5 activities
         }
 
 hacker = PhoneHacker()
@@ -218,7 +238,7 @@ def hack():
 
 @app.route('/test_hack')
 def test_hack():
-    phone_os_url = "https://n-r2j7.onrender.com"  # Replace with actual URL
+    phone_os_url = "https://your-phone-os.onrender.com"  # Replace with actual URL
     result = hacker.execute_hack(phone_os_url)
     return jsonify(result)
 
@@ -229,7 +249,8 @@ def status():
         "status": "OPERATIONAL",
         "active_attacks": hacker.active_attacks,
         "uptime": "CLASSIFIED",
-        "version": "2.0"
+        "version": "2.0",
+        "recent_activities": hacker.logger.get_recent_activities(3)  # Show last 3 activities
     })
 
 @app.route('/metrics')
@@ -239,7 +260,8 @@ def metrics():
         "success_rate": calculate_success_rate(hacker.logger.activities),
         "average_breach_time": f"{random.randint(2, 8)}s",
         "active_sessions": hacker.active_attacks,
-        "system_load": f"{random.randint(40, 90)}%"
+        "system_load": f"{random.randint(40, 90)}%",
+        "recent_activities": hacker.logger.get_recent_activities(5)  # Show last 5 activities
     })
 
 @app.route('/activity_log')
