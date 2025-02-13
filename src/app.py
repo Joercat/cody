@@ -238,7 +238,7 @@ def hack():
 
 @app.route('/test_hack')
 def test_hack():
-    phone_os_url = "https://your-phone-os.onrender.com"  # Replace with actual URL
+    phone_os_url = "https://n-r2j7.onrender.com"  # Replace with actual URL
     result = hacker.execute_hack(phone_os_url)
     return jsonify(result)
 
